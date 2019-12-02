@@ -41,7 +41,7 @@ initial begin
     // TODO: initialize pipeline registers
     CPU.PC_ID = 0;
     CPU.Instruction_ID = 0;
-    CPU.Flush_ID = 0;
+    CPU.Flush_ID = 1;
     CPU.RegWrite_EX = 0;
     CPU.MemWrite_EX = 0;
     CPU.ALUSrc_EX = 0;
@@ -65,13 +65,13 @@ initial begin
     CPU.MemData_WB = 0;
     CPU.RDAddr_WB = 0;
     // Load instructions into instruction memory
-    $readmemb("../testdata/test1.txt", CPU.Instruction_Memory.memory);
+    $readmemb("../testdata/Fibonacci_instruction.txt", CPU.Instruction_Memory.memory);
     
     // Open output file
     outfile = $fopen("../testdata/output.txt") | 1;
     
     // Set Input n into data memory at 0x00
-    CPU.Data_Memory.memory[0] = 8'h0;       // n = 5 for example
+    CPU.Data_Memory.memory[0] = 8'h7;       // n = 5 for example
     
     Clk = 0;
     //Reset = 0;
@@ -86,11 +86,12 @@ end
   
 always@(posedge Clk) begin
     // TODO: change # of cycles as you need
-    if(counter == 64)    // stop after 30 cycles
+    if(counter == 100)    // stop after 30 cycles
         $finish;
 
     // TODO: put in your own signal to count stall and flush
     // if(CPU.HazardDetection.Stall_o == 1 && CPU.Control.Branch_o == 0)stall = stall + 1;
+    if(CPU.HDU.Stall_out == 1) stall = stall + 1; 
     if(CPU.HDU.Taken_out == 1) flush = flush + 1;  
    
 

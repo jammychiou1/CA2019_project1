@@ -20,13 +20,16 @@ wire MemWrite_ID;
 wire ALUSrc_ID;
 wire Branch_ID;
 wire MemRead_ID;
+wire [4:0] RS1Addr_ID;
+wire [4:0] RS2Addr_ID;
+wire [4:0] RDAddr_ID;
 wire [2:0] ALUOp_ID;
 wire [31:0] RS1Data_ID;
 wire [31:0] RS2Data_ID;
 wire [31:0] Immediate_ID;
 wire [31:0] JumpOffset_ID;
-wire [1:0] Foward1_ID;
-wire [1:0] Foward2_ID;
+wire [1:0] Forward1_ID;
+wire [1:0] Forward2_ID;
 wire [31:0] TrueRS1Data_ID;
 wire [31:0] TrueRS2Data_ID;
 wire Taken_ID;
@@ -44,8 +47,8 @@ reg [4:0] RS1Addr_EX;
 reg [4:0] RS2Addr_EX;
 reg [4:0] RDAddr_EX;
 
-wire [1:0] Foward1_EX;
-wire [1:0] Foward2_EX;
+wire [1:0] Forward1_EX;
+wire [1:0] Forward2_EX;
 wire [31:0] TrueRS1Data_EX;
 wire [31:0] TrueRS2Data_EX;
 wire [31:0] ALURes_EX;
@@ -71,7 +74,7 @@ PC PC(
     .clk_i          (clk_i),
     .start_i        (start_i),
     .PCWrite_i      (!Stall_ID),
-    .pc_i           (Taken_ID ? PC_ID + JumpOffset_ID: PC_IF + 4),
+    .pc_i           (Taken_ID ? PC_ID + JumpOffset_ID : PC_IF + 4),
     .pc_o           (PC_IF)
 );
 
@@ -99,10 +102,14 @@ Control Control(
     .ALUOp_out      (ALUOp_ID)
 );
 
+assign RS1Addr_ID = Instruction_ID[19:15];
+assign RS2Addr_ID = Instruction_ID[24:20];
+assign RDAddr_ID = Instruction_ID[11:7];
+
 Registers Registers(
     .clk_i          (clk_i),
-    .RS1addr_i      (Instruction_ID[19:15]),
-    .RS2addr_i      (Instruction_ID[24:20]),
+    .RS1addr_i      (RS1Addr_ID),
+    .RS2addr_i      (RS2Addr_ID),
     .RDaddr_i       (RDAddr_WB),
     .RDdata_i       (RDData_WB),
     .RegWrite_i     (RegWrite_WB),
@@ -120,30 +127,28 @@ Shift_Left_1 Shift_Left_1(
     .JumpOffset_out (JumpOffset_ID)
 );
 
-assign Foward1_ID = 0;
-assign Foward2_ID = 0;
-
-assign TrueRS1Data_ID = Foward1_ID == 0 ? RS1Data_ID :
-                        Foward1_ID == 1 ? RDData_WB : ALURes_MEM;
-assign TrueRS2Data_ID = Foward2_ID == 0 ? RS2Data_ID :
-                        Foward2_ID == 1 ? RDData_WB : ALURes_MEM;
+assign TrueRS1Data_ID = Forward1_ID == 0 ? RS1Data_ID :
+                        Forward1_ID == 1 ? RDData_WB : ALURes_MEM;
+assign TrueRS2Data_ID = Forward2_ID == 0 ? RS2Data_ID :
+                        Forward2_ID == 1 ? RDData_WB : ALURes_MEM;
 
 HDU HDU(
-    .Branch_in      (Branch_ID),
+    .Branch_ID_in   (Branch_ID),
     .Zr_in          (TrueRS1Data_ID == TrueRS2Data_ID),
-    .Taken_out      (Taken_ID)
+    .RS1Addr_ID_in  (RS1Addr_ID),
+    .RS2Addr_ID_in  (RS2Addr_ID),
+    .ALUSrc_ID_in   (ALUSrc_ID),
+    .RegWrite_ID_in (RegWrite_ID),
+    .MemWrite_ID_in (MemWrite_ID),
+    .RegWrite_EX_in (RegWrite_EX),
+    .MemRead_EX_in  (MemRead_EX),
+    .RDAddr_EX_in   (RDAddr_EX),
+    .RegWrite_MEM_in(RegWrite_MEM),
+    .MemRead_MEM_in (MemRead_MEM),
+    .RDAddr_MEM_in  (RDAddr_MEM),
+    .Taken_out      (Taken_ID),
+    .Stall_out      (Stall_ID)
 );
-Forward Forward(
-	.RDAddr_WB		(RDAddr_WB),
-	.RDAddr_MEM		(RDAddr_MEM),
-	.RegWrite_WB	(RegWrite_WB),
-	.RegWrite_MEM	(RegWrite_MEM),
-	.RS1Addr_EX		(RS1Addr_EX),
-	.RS2Addr_EX		(RS2Addr_EX),
-	.ForwardA		(),
-	.ForwardB		()
-);                       
-assign Stall_ID = 0;
 
 always @(posedge clk_i) begin
     RegWrite_EX <= RegWrite_ID & (!Stall_ID);
@@ -154,18 +159,30 @@ always @(posedge clk_i) begin
     RS1Data_EX <= RS1Data_ID;
     RS2Data_EX <= RS2Data_ID;
     Immediate_EX <= Immediate_ID;
-    RS1Addr_EX <= Instruction_ID[19:15];
-    RS2Addr_EX <= Instruction_ID[24:20];
-    RDAddr_EX <= Instruction_ID[11:7];
+    RS1Addr_EX <= RS1Addr_ID;
+    RS2Addr_EX <= RS2Addr_ID;
+    RDAddr_EX <= RDAddr_ID;
 end
 
-assign Foward1_EX = 0;
-assign Foward2_EX = 0;
+Forward Forward(
+	.RDAddr_WB		(RDAddr_WB),
+	.RDAddr_MEM		(RDAddr_MEM),
+	.RegWrite_WB	(RegWrite_WB),
+	.RegWrite_MEM	(RegWrite_MEM),
+	.RS1Addr_ID		(RS1Addr_ID),
+	.RS2Addr_ID		(RS2Addr_ID),
+	.RS1Addr_EX		(RS1Addr_EX),
+	.RS2Addr_EX		(RS2Addr_EX),
+	.Forward1_ID	(Forward1_ID),
+	.Forward2_ID	(Forward2_ID),
+	.Forward1_EX	(Forward1_EX),
+	.Forward2_EX	(Forward2_EX)
+);                       
 
-assign TrueRS1Data_EX = Foward1_EX == 0 ? RS1Data_EX :
-                        Foward1_EX == 1 ? RDData_WB : ALURes_MEM;
-assign TrueRS2Data_EX = Foward2_EX == 0 ? RS2Data_EX :
-                        Foward2_EX == 1 ? RDData_WB : ALURes_MEM;
+assign TrueRS1Data_EX = Forward1_EX == 0 ? RS1Data_EX :
+                        Forward1_EX == 1 ? RDData_WB : ALURes_MEM;
+assign TrueRS2Data_EX = Forward2_EX == 0 ? RS2Data_EX :
+                        Forward2_EX == 1 ? RDData_WB : ALURes_MEM;
 
 ALU ALU(
     .Data1_in       (TrueRS1Data_EX),

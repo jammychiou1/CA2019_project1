@@ -9,7 +9,7 @@ output MemRead_out;
 output [2:0] ALUOp_out;
 assign RegWrite_out = Instruction_in[5:4] != 2 & !Flush_in;
 assign MemWrite_out = Instruction_in[6:4] == 2 & !Flush_in;
-assign ALUSrc_out = Instruction_in[5:4] != 3;
+assign ALUSrc_out = Instruction_in[5:4] != 3 & !Instruction_in[6];
 assign Branch_out = Instruction_in[6] & !Flush_in;
 assign MemRead_out = !Instruction_in[4];
 assign ALUOp_out = Instruction_in[5:4] != 3 ? 2:
