@@ -133,7 +133,16 @@ HDU HDU(
     .Zr_in          (TrueRS1Data_ID == TrueRS2Data_ID),
     .Taken_out      (Taken_ID)
 );
-                        
+Forward Forward(
+	.RDAddr_WB		(RDAddr_WB),
+	.RDAddr_MEM		(RDAddr_MEM),
+	.RegWrite_WB	(RegWrite_WB),
+	.RegWrite_MEM	(RegWrite_MEM),
+	.RS1Addr_EX		(RS1Addr_EX),
+	.RS2Addr_EX		(RS2Addr_EX),
+	.ForwardA		(),
+	.ForwardB		()
+);                       
 assign Stall_ID = 0;
 
 always @(posedge clk_i) begin
