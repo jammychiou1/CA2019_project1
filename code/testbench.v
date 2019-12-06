@@ -71,7 +71,7 @@ initial begin
     outfile = $fopen("../testdata/output.txt") | 1;
     
     // Set Input n into data memory at 0x00
-    CPU.Data_Memory.memory[0] = 8'h7;       // n = 5 for example
+    CPU.Data_Memory.memory[0] = 8'h5;       // n = 5 for example
     
     Clk = 0;
     //Reset = 0;

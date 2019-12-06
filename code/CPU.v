@@ -28,10 +28,6 @@ wire [31:0] RS1Data_ID;
 wire [31:0] RS2Data_ID;
 wire [31:0] Immediate_ID;
 wire [31:0] JumpOffset_ID;
-wire [1:0] Forward1_ID;
-wire [1:0] Forward2_ID;
-wire [31:0] TrueRS1Data_ID;
-wire [31:0] TrueRS2Data_ID;
 wire Taken_ID;
 wire Stall_ID;
 
@@ -127,14 +123,9 @@ Shift_Left_1 Shift_Left_1(
     .JumpOffset_out (JumpOffset_ID)
 );
 
-assign TrueRS1Data_ID = Forward1_ID == 0 ? RS1Data_ID :
-                        Forward1_ID == 1 ? RDData_WB : ALURes_MEM;
-assign TrueRS2Data_ID = Forward2_ID == 0 ? RS2Data_ID :
-                        Forward2_ID == 1 ? RDData_WB : ALURes_MEM;
-
 HDU HDU(
     .Branch_ID_in   (Branch_ID),
-    .Zr_in          (TrueRS1Data_ID == TrueRS2Data_ID),
+    .Zr_in          (RS1Data_ID == RS2Data_ID),
     .RS1Addr_ID_in  (RS1Addr_ID),
     .RS2Addr_ID_in  (RS2Addr_ID),
     .ALUSrc_ID_in   (ALUSrc_ID),
@@ -143,9 +134,6 @@ HDU HDU(
     .RegWrite_EX_in (RegWrite_EX),
     .MemRead_EX_in  (MemRead_EX),
     .RDAddr_EX_in   (RDAddr_EX),
-    .RegWrite_MEM_in(RegWrite_MEM),
-    .MemRead_MEM_in (MemRead_MEM),
-    .RDAddr_MEM_in  (RDAddr_MEM),
     .Taken_out      (Taken_ID),
     .Stall_out      (Stall_ID)
 );
@@ -169,12 +157,8 @@ Forward Forward(
 	.RDAddr_MEM		(RDAddr_MEM),
 	.RegWrite_WB	(RegWrite_WB),
 	.RegWrite_MEM	(RegWrite_MEM),
-	.RS1Addr_ID		(RS1Addr_ID),
-	.RS2Addr_ID		(RS2Addr_ID),
 	.RS1Addr_EX		(RS1Addr_EX),
 	.RS2Addr_EX		(RS2Addr_EX),
-	.Forward1_ID	(Forward1_ID),
-	.Forward2_ID	(Forward2_ID),
 	.Forward1_EX	(Forward1_EX),
 	.Forward2_EX	(Forward2_EX)
 );                       
