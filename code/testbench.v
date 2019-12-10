@@ -13,10 +13,8 @@ CPU CPU(
     .clk_i  (Clk),
     .start_i(Start)
 );
-
+  
 initial begin
-    $dumpfile ("TestBench.dump");
-    $dumpvars (0, TestBench);
     counter = 0;
     stall = 0;
     flush = 0;
@@ -35,13 +33,15 @@ initial begin
     for(i=0; i<32; i=i+1) begin
         CPU.Registers.register[i] = 32'b0;
     end
-    
+
+    // TODO: initialize pipeline registers
     
     CPU.PC.pc_o = 0;
-    // TODO: initialize pipeline registers
+    
     CPU.PC_ID = 0;
     CPU.Instruction_ID = 0;
-    CPU.Flush_ID = 1;
+    CPU.Flush_ID = 0;
+
     CPU.RegWrite_EX = 0;
     CPU.MemWrite_EX = 0;
     CPU.ALUSrc_EX = 0;
@@ -53,19 +53,22 @@ initial begin
     CPU.RS1Addr_EX = 0;
     CPU.RS2Addr_EX = 0;
     CPU.RDAddr_EX = 0;
+
     CPU.RegWrite_MEM = 0;
     CPU.MemWrite_MEM = 0;
     CPU.MemRead_MEM = 0;
     CPU.ALURes_MEM = 0;
     CPU.RS2Data_MEM = 0;
     CPU.RDAddr_MEM = 0;
+
     CPU.RegWrite_WB = 0;
     CPU.MemRead_WB = 0;
     CPU.ALURes_WB = 0;
     CPU.MemData_WB = 0;
     CPU.RDAddr_WB = 0;
+    
     // Load instructions into instruction memory
-    $readmemb("../testdata/Fibonacci_instruction.txt", CPU.Instruction_Memory.memory);
+    $readmemb("../testdata/instruction.txt", CPU.Instruction_Memory.memory);
     
     // Open output file
     outfile = $fopen("../testdata/output.txt") | 1;
@@ -73,7 +76,7 @@ initial begin
     // Set Input n into data memory at 0x00
     CPU.Data_Memory.memory[0] = 8'h5;       // n = 5 for example
     
-    Clk = 0;
+    Clk = 1;
     //Reset = 0;
     Start = 0;
     
@@ -86,13 +89,12 @@ end
   
 always@(posedge Clk) begin
     // TODO: change # of cycles as you need
-    if(counter == 100)    // stop after 30 cycles
+    if(counter == 30)    // stop after 30 cycles
         $finish;
 
     // TODO: put in your own signal to count stall and flush
-    // if(CPU.HazardDetection.Stall_o == 1 && CPU.Control.Branch_o == 0)stall = stall + 1;
-    if(CPU.HDU.Stall_out == 1) stall = stall + 1; 
-    if(CPU.HDU.Taken_out == 1) flush = flush + 1;  
+    if(CPU.Stall_ID == 1) stall = stall + 1;
+    if(CPU.Taken_ID == 1) flush = flush + 1;  
    
 
     // print PC
